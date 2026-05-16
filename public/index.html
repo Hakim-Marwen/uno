@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>UNO — Multijoueur en ligne</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+</head>
+<body>
+
+  <!-- Écran de chargement (utilisé uniquement lors des reconnexions) -->
+  <div id="screen-loading" class="screen screen-loading">
+    <div class="loading-logo">UNO</div>
+    <div class="spinner"></div>
+    <p class="loading-msg" id="loading-msg">Reconnexion…</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       LOBBY
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-lobby" class="screen screen-lobby">
+    <div class="lobby-inner">
+      <h1 class="logo">UNO</h1>
+      <p class="tagline">Multijoueur en ligne</p>
+
+      <div class="card-panel">
+        <div class="form-group">
+          <label for="input-name">Votre pseudo</label>
+          <input type="text" id="input-name" placeholder="Ex : SuperJoueur" maxlength="16" autocomplete="off">
+        </div>
+
+        <button class="btn btn-primary" id="btn-create">🎮 Créer une partie</button>
+
+        <div class="divider"><span>ou rejoindre</span></div>
+
+        <div class="form-group">
+          <label for="input-code">Code de la salle</label>
+          <input type="text" id="input-code" placeholder="ABC123" maxlength="6" autocomplete="off" class="code-input">
+        </div>
+
+        <button class="btn btn-secondary" id="btn-join">🚪 Rejoindre</button>
+      </div>
+
+      <p class="lobby-hint">Partagez le code de salle avec vos amis pour jouer ensemble depuis n'importe quel appareil.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SALLE D'ATTENTE
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-waiting" class="screen screen-waiting">
+    <div class="waiting-inner">
+      <h2 class="logo" style="font-size:2.5rem">UNO</h2>
+
+      <div class="room-code-box">
+        <p class="room-code-label">Code de la salle</p>
+        <div class="room-code-big" id="display-code">------</div>
+        <p class="room-code-hint">Partagez ce code avec vos amis</p>
+        <button class="btn btn-outline btn-small" id="btn-copy">📋 Copier le lien</button>
+      </div>
+
+      <div class="players-panel" id="waiting-players">
+        <h3>Joueurs (<span id="player-count">0</span>)</h3>
+      </div>
+
+      <div class="waiting-actions">
+        <button class="btn btn-primary" id="btn-start" disabled>▶ Démarrer (min. 2 joueurs)</button>
+        <button class="btn btn-ghost" id="btn-leave-waiting">← Quitter</button>
+      </div>
+
+      <p class="waiting-hint" id="waiting-hint">En attente de l'hôte…</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       JEU
+  ═══════════════════════════════════════════════ -->
+  <div id="screen-game" class="screen screen-game">
+
+    <!-- Header -->
+    <header class="game-header">
+      <div class="game-logo">UNO</div>
+      <div class="turn-badge" id="turn-badge">En attente…</div>
+      <div class="dir-badge" id="dir-badge">↻</div>
+    </header>
+
+    <!-- Zone de jeu -->
+    <main class="game-main">
+
+      <!-- Adversaires -->
+      <section class="opponents-row" id="opponents-row" aria-label="Adversaires"></section>
+
+      <!-- Plateau central -->
+      <section class="board" aria-label="Plateau de jeu">
+        <div class="pile draw-pile">
+          <span class="pile-label">Pioche</span>
+          <div class="card card-back" id="btn-draw" role="button" tabindex="0" aria-label="Piocher une carte">
+            <span class="card-back-text">UNO</span>
+            <span class="deck-count" id="deck-count">108</span>
+          </div>
+        </div>
+
+        <div class="wild-color-badge" id="wild-color-badge" hidden>
+          <span class="wcb-label">Couleur active</span>
+          <span class="wcb-dot" id="wcb-dot"></span>
+        </div>
+
+        <div class="pile discard-pile">
+          <span class="pile-label">Défausse</span>
+          <div id="discard-pile-card"></div>
+        </div>
+      </section>
+
+      <!-- Main du joueur -->
+      <section class="my-hand-section">
+        <p class="hand-label">Votre main — <span id="my-card-count">0</span> carte(s)</p>
+        <div class="my-hand" id="my-hand" role="list" aria-label="Vos cartes"></div>
+      </section>
+
+    </main>
+
+    <!-- Bouton UNO -->
+    <button class="uno-float-btn" id="btn-uno" hidden aria-label="Crier UNO">UNO!</button>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       OVERLAYS
+  ═══════════════════════════════════════════════ -->
+
+  <!-- Choix de couleur (Wild) -->
+  <div id="overlay-color" class="overlay" hidden role="dialog" aria-modal="true" aria-label="Choisissez une couleur">
+    <div class="overlay-card">
+      <h3>Choisissez une couleur</h3>
+      <div class="color-grid">
+        <button class="color-btn color-red"    data-color="red"    aria-label="Rouge">Rouge</button>
+        <button class="color-btn color-blue"   data-color="blue"   aria-label="Bleu">Bleu</button>
+        <button class="color-btn color-green"  data-color="green"  aria-label="Vert">Vert</button>
+        <button class="color-btn color-yellow" data-color="yellow" aria-label="Jaune">Jaune</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fin de partie -->
+  <div id="overlay-gameover" class="overlay" hidden role="dialog" aria-modal="true">
+    <div class="overlay-card overlay-gameover">
+      <div class="go-emoji" id="go-emoji">🏆</div>
+      <h2 id="go-title">Victoire !</h2>
+      <p id="go-msg">Félicitations, vous avez gagné !</p>
+      <div class="go-scores" id="go-scores"></div>
+      <button class="btn btn-primary" id="btn-new-game" style="width:100%">🔄 Rejouer</button>
+      <button class="btn btn-ghost" id="btn-back-lobby" style="width:100%;margin-top:.5rem">← Retour au menu</button>
+    </div>
+  </div>
+
+  <!-- Déconnexion -->
+  <div id="overlay-disconnect" class="overlay" hidden>
+    <div class="overlay-card">
+      <div style="font-size:2.5rem;margin-bottom:.75rem">🔌</div>
+      <h3>Connexion perdue</h3>
+      <p style="color:var(--muted);margin-bottom:1.25rem">Tentative de reconnexion…</p>
+      <div class="spinner" style="margin:0 auto;width:32px;height:32px"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
